@@ -78,7 +78,7 @@ end
 
 function auriskins.get_skin_data(player)
 	if not auriskins.playerskins[player:get_player_name()] then
- 		auriskins.playerskins[player:get_player_name()] = 0
+		auriskins.set_skin(player, 0)
 	end
 	return auriskins.skindata[auriskins.playerskins[player:get_player_name()]]
 end
