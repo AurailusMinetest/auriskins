@@ -59,45 +59,53 @@ auriskins.playerskins = {}
 auriskins.load();
 
 function auriskins.update_skin(player)
-	if player and auriskins.playerskins[player:get_player_name()] then
-		if minetest.get_modpath("3d_armor") then
-			--Handle 3D-Armor Layers
-			if armor.textures then --Check if loaded
+	if player and player:is_player() then
+		if auriskins.playerskins[player:get_player_name()] then
+			if minetest.get_modpath("3d_armor") then
+				--Handle 3D-Armor Layers
+				if armor.textures then --Check if loaded
 
-				armor.textures[player:get_player_name()].skin = 
-					auriskins.skindata[ auriskins.playerskins[ player:get_player_name() ] ].skin
+					armor.textures[player:get_player_name()].skin = 
+						auriskins.skindata[ auriskins.playerskins[ player:get_player_name() ]].skin
 
-				armor:update_player_visuals(player)
+					armor:update_player_visuals(player)
+				end
+			else
+				player_api.set_textures(player, {auriskins.skindata[auriskins.playerskins[player:get_player_name()]].skin})
 			end
-		else
-			player_api.set_textures(player, {auriskins.skindata[auriskins.playerskins[player:get_player_name()]].skin})
+			auriskins.save()
 		end
-		auriskins.save()
 	end
 end
 
 function auriskins.get_skin_data(player)
 	if not auriskins.playerskins[player:get_player_name()] then
-		auriskins.set_skin(player, 0)
+		auriskins.set_skin(player, 1) -- ARRAY INDEXES START AT 1
 	end
 	return auriskins.skindata[auriskins.playerskins[player:get_player_name()]]
 end
 
 function auriskins.set_skin(player, skin)
 	auriskins.playerskins[player:get_player_name()] = skin
-	auriskins.update_skin(player:get_player_name())
+	auriskins.update_skin(player)
 end
 
 minetest.register_on_joinplayer(function(player)
-	if auriskins.playerskins[player:get_player_name()] ~= nil then
-		auriskins.update_skin(player)
+	if not auriskins.playerskins[player:get_player_name()] then
+		auriskins.set_skin(player, 1) -- ARRAY INDEXES START AT 1
 	end
+	auriskins.update_skin(player)
+	minetest.after(3, function(player) auriskins.update_skin(player) end, player)
+	minetest.after(5, function(player) auriskins.update_skin(player) end, player)
 end)
 
 minetest.register_chatcommand("skin", {
 	params = "<skinid>",
 	func = function(name, param)
-		auriskins.playerskins[name] = param
-		auriskins.update_skin(minetest.get_player_by_name(name))
+		local ind = tonumber(param)
+		if ind and ind > 0 and ind <= #auriskins.skindata then
+			auriskins.set_skin(minetest.get_player_by_name(name), ind) -- ARRAY INDEXES START AT 1
+			-- auriskins.update_skin(minetest.get_player_by_name(name))
+		end
 	end,
 })
