@@ -27,13 +27,30 @@ while true do
 		f:close()
 	end
 
-	f = io.open(minetest.get_modpath("auriskins") .. "/textures/preview_" .. i .. ".png")
-	if f then
-		auriskins.skindata[i].preview = "preview_" .. i .. ".png"
-		f:close()
-	else
-		auriskins.skindata[i].preview = nil
-	end
+	--[[
+	THIS PART GENERATES PREVIEWS FROM SKIN FILES INDEPENDANT OF *ANY* EXTERNAL SCRIPS
+	How it works:
+
+	'([combine:         16x32 :         -16,-12 =               char_1.png     ^[mask:     auriskins_mask_chest.png)^'
+						Size of completed image   Position of part    Image to copy from         Mask for what part of image to copy
+	]]
+
+	--Chest
+	local skin = '([combine:16x32:-16,-12=char_' .. i .. '.png^[mask:auriskins_mask_chest.png)^'
+	--Head
+	skin = skin .. '([combine:16x32:-4,-8=char_' .. i .. '.png^[mask:auriskins_mask_head.png)^'
+	--Hat
+	skin = skin .. '([combine:16x32:-36,-8=char_' .. i .. '.png^[mask:auriskins_mask_head.png)^'
+	--Left Arm
+	skin = skin .. '([combine:16x32:-44,-12=char_' .. i .. '.png^[mask:auriskins_mask_larm.png)^'
+	--Right Arm
+	skin = skin .. '([combine:16x32:-44,-12=char_' .. i .. '.png^[mask:auriskins_mask_larm.png^[transformFX)^'
+	--Left Leg
+	skin = skin .. '([combine:16x32:0,0=char_' .. i .. '.png^[mask:auriskins_mask_lleg.png)^'
+	--Right Leg
+	skin = skin .. '([combine:16x32:0,0=char_' .. i .. '.png^[mask:auriskins_mask_lleg.png^[transformFX)'
+
+	auriskins.skindata[i].preview = skin
 end
 auriskins.skinsloaded = i - 1
 
@@ -61,17 +78,43 @@ auriskins.load();
 function auriskins.update_skin(player)
 	if player and player:is_player() then
 		if auriskins.playerskins[player:get_player_name()] then
+
+			local detail = minetest.setting_get("skin_detail")
+			if not detail then minetest.setting_set("skin_detail", "1"); detail = "1" end
+			detail = tonumber(detail)
+
+			local r = "^[resize:1024x512";
+			if detail == 1 then
+				r = "^[resize:64x32"
+			elseif detail == 2 then
+				r = "^[resize:128x64"
+			elseif detail == 3 then
+				r = "^[resize:256x128"
+			elseif detail == 4 then
+				r = "^[resize:512x256"
+			elseif detail == 0.5 then
+				r = "^[resize:32x16"
+			end
+
+			local trans = minetest.setting_get("skin_transparency")
+			if not trans then minetest.setting_set("skin_transparency", "0"); trans = "0" end
+			trans = tonumber(trans)
+
+			local t = ""
+			if trans == 0 then
+				t = "(auriskins_no_transparency.png" .. r .. ")^"
+			end
+
+			local skinval =  t .. "(" .. auriskins.skindata[ auriskins.playerskins[ player:get_player_name() ]].skin .. r .. ")"
+
 			if minetest.get_modpath("3d_armor") then
 				--Handle 3D-Armor Layers
 				if armor.textures then --Check if loaded
-
-					armor.textures[player:get_player_name()].skin = 
-						auriskins.skindata[ auriskins.playerskins[ player:get_player_name() ]].skin
-
+					armor.textures[player:get_player_name()].skin = skinval
 					armor:update_player_visuals(player)
 				end
 			else
-				player_api.set_textures(player, {auriskins.skindata[auriskins.playerskins[player:get_player_name()]].skin})
+				player_api.set_textures(player, {skinval})
 			end
 			auriskins.save()
 		end
