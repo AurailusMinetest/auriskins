@@ -4,6 +4,10 @@ auriskins.skindata = {}
 
 auriskins.skinsloaded = 0
 
+if minetest.get_modpath("auriinventory") ~= nil then
+	dofile(minetest.get_modpath("auriskins") .. "/auriinventory.lua")
+end
+
 local i = 0
 while true do
 	i = i + 1
